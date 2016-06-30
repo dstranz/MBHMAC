@@ -31,22 +31,23 @@
 -(NSString *)hmacWithHashingAlgorithm:(CCHmacAlgorithm)algorithm
                                   key:(NSString *)keyString
 {
-    int digestLength = [self lengthForAlgorithm:algorithm];
     const char *key = [keyString cStringUsingEncoding:NSUTF8StringEncoding];
     const char *data = [self cStringUsingEncoding:NSUTF8StringEncoding];
-    unsigned char cHMAC[digestLength];
+    unsigned char cHMAC[[self lengthForAlgorithm:algorithm]];
     CCHmac(algorithm, key, strlen(key), data, strlen(data), cHMAC);
-    NSMutableString *ret = [NSMutableString stringWithCapacity:digestLength*2];
-    for (int i = 0; i<digestLength; i++) {
-        [ret appendFormat:@"%02x", cHMAC[i]];
-    }
-    return ret;
+    NSData *resultData = [[NSData alloc] initWithBytes:cHMAC
+                                                length:sizeof(cHMAC)];
+    char *utf8;
+    utf8 = (char *)resultData.bytes;
+    NSMutableString *hex = [NSMutableString string];
+    for(int i = 0; i <  resultData.length; i++) [hex appendFormat:@"%02X" , *utf8++ & 0x00FF];
+    return [NSString stringWithFormat:@"%@", hex];
 }
 
 -(int)lengthForAlgorithm:(CCHmacAlgorithm)a
 {
     int length = 0;
-    
+
     switch (a) {
         case kCCHmacAlgSHA1:
             length = CC_SHA1_DIGEST_LENGTH;
